@@ -19,7 +19,7 @@ npm install
 Start application and check check your application on http://localhost:8080/metrics
 
 ```
-node index.js
+npm run dev
 ```
 
 Run Prometheus: Ensure you have Docker installed and running.
