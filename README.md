@@ -1,9 +1,9 @@
-# Creditcoin Telemetry Exporter
+# Creditcoin Metrics
 
 ## Purpose
 
-This repository contains the application code and infrastructure code for telemetry exporter.
-It is made up of a scrapper which scrapes specified data from https://telemetry.polkadot.io,
+This repository contains the application code and infrastructure code for creditcoin metrics.
+It is made up of a scrapper which scrapes specified data from Creditcoin networks' rpcs,
 then it creates metrics from the strramed data.
 
 ## How to Use
