@@ -15,6 +15,7 @@ const port = process.env.PORT || 3000;
 const wsUrl = process.env.CREDITCOIN_API_URL || "ws://127.0.0.1:9944";
 const chainName = process.env.CHAIN_NAME || "creditcoin_local";
 const INTERVAL_OF_SYNC = 30000;
+const gluwaValidators = process.env.GLUWA_VALIDATORS?.split(",") ?? [];
 
 const activeValidatorCountGuage = new client.Gauge({
   name: "ccm_active_validator_count",
@@ -40,10 +41,17 @@ const totalStakedGauge = new client.Gauge({
   labelNames: ["chain"],
 });
 
+const missingPrevoteValidatorsGauge = new client.Gauge({
+  name: "ccm_missing_prevote_gluwa_validator_count",
+  help: "this metric holds the number of Gluwa validators that misses prevote",
+  labelNames: ["chain"],
+});
+
 register.registerMetric(activeNominatorCountGuage);
 register.registerMetric(activeValidatorCountGuage);
 register.registerMetric(waitingValidatorCountGuage);
 register.registerMetric(totalStakedGauge);
+register.registerMetric(missingPrevoteValidatorsGauge);
 
 const provider = new WsProvider(wsUrl);
 
@@ -51,6 +59,7 @@ let previousActiveValidatorCount: number;
 let previousWaitingValidatorCount: number;
 let previousNominatorCount: number;
 let previousTotalStaked: number;
+let previousMissedPrevoteValidators: number;
 
 const getValidatorsCount = async (
   api: ApiPromise
@@ -172,6 +181,31 @@ const updateTotalStakedGauge = async (api: ApiPromise) => {
   }
 };
 
+const getMissedPrevoteValidators = async (api: ApiPromise): Promise<number> => {
+  try {
+    const roundState = await api.rpc.grandpa.roundState();
+    const missingValidators =
+      roundState.best.prevotes.missing.toJSON() as string[];
+
+    return missingValidators.filter((validator) =>
+      gluwaValidators.includes(validator)
+    ).length;
+  } catch (e) {
+    console.error(e);
+    return previousMissedPrevoteValidators;
+  }
+};
+
+const updateMissedPrevoteValidatorsGauge = async (api: ApiPromise) => {
+  const missedPrevoteValidators = await getMissedPrevoteValidators(api);
+  if (previousMissedPrevoteValidators !== missedPrevoteValidators) {
+    missingPrevoteValidatorsGauge
+      .labels(chainName)
+      .set(missedPrevoteValidators);
+    previousMissedPrevoteValidators = missedPrevoteValidators;
+  }
+};
+
 const updateGauge = async () => {
   const api = await ApiPromise.create({ provider, noInitWarn: true });
   await cryptoWaitReady();
@@ -179,6 +213,7 @@ const updateGauge = async () => {
   await updateValidatorGauge(api);
   await updateNominatorGauge(api);
   await updateTotalStakedGauge(api);
+  await updateMissedPrevoteValidatorsGauge(api);
 };
 
 setInterval(async () => {
