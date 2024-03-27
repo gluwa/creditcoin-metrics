@@ -54,6 +54,7 @@ register.registerMetric(totalStakedGauge);
 register.registerMetric(missingPrevoteValidatorsGauge);
 
 const provider = new WsProvider(wsUrl);
+let api: any = null;
 
 let previousActiveValidatorCount: number;
 let previousWaitingValidatorCount: number;
@@ -207,7 +208,7 @@ const updateMissedPrevoteValidatorsGauge = async (api: ApiPromise) => {
 };
 
 const updateGauge = async () => {
-  const api = await ApiPromise.create({ provider, noInitWarn: true });
+  if (!api) return;
   await cryptoWaitReady();
 
   await updateValidatorGauge(api);
@@ -216,11 +217,15 @@ const updateGauge = async () => {
   await updateMissedPrevoteValidatorsGauge(api);
 };
 
-setInterval(async () => {
-  await updateGauge();
-}, INTERVAL_OF_SYNC);
+const start = async () => {
+  api = await ApiPromise.create({ provider, noInitWarn: true });
 
-// updateGauge();
+  setInterval(async () => {
+    await updateGauge();
+  }, INTERVAL_OF_SYNC);
+};
+
+start();
 
 app.get("/metrics", async (req, res) => {
   res.setHeader("Content-Type", register.contentType);
