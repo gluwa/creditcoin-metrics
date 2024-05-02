@@ -242,6 +242,10 @@ app.get("/health", async (req, res) => {
   );
 });
 
+app.post("/trigger-error", async (req, res) => {
+  process.exit(1);
+});
+
 app.listen(port, () => {
   console.log(`[server]: Server is running at http://localhost:${port}`);
 });
