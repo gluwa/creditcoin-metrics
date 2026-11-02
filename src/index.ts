@@ -7,11 +7,11 @@ import { cryptoWaitReady } from "@polkadot/util-crypto";
 import { AccountId } from "@polkadot/types/interfaces";
 import BigNumber from "bignumber.js";
 
-dotenv.config();
+dotenv.config({ quiet: true });
 const register = new client.Registry();
 
 const app: Express = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 8080;
 const wsUrl = process.env.CREDITCOIN_API_URL || "ws://127.0.0.1:9944";
 const chainName = process.env.CHAIN_NAME || "creditcoin_local";
 const INTERVAL_OF_SYNC = 30000;
